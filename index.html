@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Tasks</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <h1>My Tasks</h1>
+    <form id="task-form" class="add-row" autocomplete="off">
+      <label for="task-input" class="visually-hidden">New task</label>
+      <input id="task-input" type="text" placeholder="New task…" maxlength="200" enterkeyhint="done">
+      <button type="submit">Add</button>
+    </form>
+    <p id="count" class="count"></p>
+    <ul id="task-list" class="task-list"></ul>
+    <p id="empty" class="empty">No tasks yet. Add one above.</p>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
