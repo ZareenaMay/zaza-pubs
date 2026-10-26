@@ -27,6 +27,8 @@ The list is an array of these, newest first. Older saved tasks may lack `done`; 
 - `saveTasks(tasks)` writes to localStorage (fails silently)
 - `addTask(tasks, title)` trims the title, ignores blanks, returns a new array
 - `toggleTask(tasks, id)` flips a task's `done` state, returns a new array
+- `deleteTask(tasks, id)` removes a task, returns a new array
+- `editTask(tasks, id, title)` renames a task (trims, ignores blanks), returns a new array
 - `render(tasks)` draws the list, task count and empty state
 
 Keep data logic separate from rendering so a backend can replace storage later.
@@ -44,6 +46,6 @@ Open `index.html` in a browser. There are no tests or build commands yet.
 
 ## Roadmap
 1. ~~Mark a task done~~ (done)
-2. Delete or edit a task
+2. ~~Delete or edit a task~~ (done)
 3. Due dates and filters
 4. Sync across devices (needs a backend)
