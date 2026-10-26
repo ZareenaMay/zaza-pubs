@@ -12,8 +12,16 @@
     <form id="task-form" class="add-row" autocomplete="off">
       <label for="task-input" class="visually-hidden">New task</label>
       <input id="task-input" type="text" placeholder="New task…" maxlength="200" enterkeyhint="done">
+      <label for="task-due" class="visually-hidden">Due date (optional)</label>
+      <input id="task-due" type="date">
       <button type="submit">Add</button>
     </form>
+    <div id="filters" class="filters" role="group" aria-label="Show tasks">
+      <button type="button" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" data-filter="todo" aria-pressed="false">To do</button>
+      <button type="button" data-filter="done" aria-pressed="false">Done</button>
+      <button type="button" data-filter="overdue" aria-pressed="false">Overdue</button>
+    </div>
     <p id="count" class="count"></p>
     <ul id="task-list" class="task-list"></ul>
     <p id="empty" class="empty">No tasks yet. Add one above.</p>
