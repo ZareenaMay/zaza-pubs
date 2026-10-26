@@ -1,6 +1,7 @@
 // Tasks are saved on this device in the browser's local storage.
 const STORAGE_KEY = "tasks";
 
+// Read the saved task list from this device, or an empty list if none.
 function loadTasks() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -10,6 +11,7 @@ function loadTasks() {
   }
 }
 
+// Save the task list to this device.
 function saveTasks(tasks) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
@@ -18,16 +20,19 @@ function saveTasks(tasks) {
   }
 }
 
+// Make a unique id for a new task.
 function newId() {
   return crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random();
 }
 
+// Return a new list with the trimmed task added at the top (blank titles are ignored).
 function addTask(tasks, title) {
   const clean = title.trim();
   if (!clean) return tasks;
   return [{ id: newId(), title: clean, createdAt: Date.now() }, ...tasks];
 }
 
+// Draw the task list, task count and empty message on the page.
 function render(tasks) {
   const list = document.getElementById("task-list");
   list.replaceChildren(
