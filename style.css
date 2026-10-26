@@ -33,9 +33,9 @@ body {
   padding: 32px 16px 64px;
 }
 h1 { font-size: 2rem; margin: 0 0 20px; }
-.add-row { display: flex; gap: 12px; }
+.add-row { display: flex; flex-wrap: wrap; gap: 12px; }
 .add-row input {
-  flex: 1;
+  flex: 1 1 240px;
   min-width: 0;
   font: inherit;
   padding: 14px 16px;
@@ -44,6 +44,7 @@ h1 { font-size: 2rem; margin: 0 0 20px; }
   background: var(--card);
   color: var(--text);
 }
+.add-row input[type="date"] { flex: 0 1 190px; min-height: 52px; }
 .add-row input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .add-row button {
   font: inherit;
@@ -57,7 +58,26 @@ h1 { font-size: 2rem; margin: 0 0 20px; }
   cursor: pointer;
 }
 .add-row button:active { transform: scale(0.97); }
-.count { color: var(--muted); margin: 20px 0 8px; font-size: 0.95rem; }
+.filters[hidden] { display: none; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.filters button {
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+}
+.filters button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.count { color: var(--muted); margin: 16px 0 8px; font-size: 0.95rem; }
 .task-list { list-style: none; margin: 0; padding: 0; }
 .task-list li {
   display: flex;
@@ -111,11 +131,12 @@ h1 { font-size: 2rem; margin: 0 0 20px; }
 .edit-row {
   flex: 1;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 8px 0 8px 8px;
 }
 .edit-row input {
-  flex: 1;
+  flex: 1 1 200px;
   min-width: 0;
   font: inherit;
   padding: 8px 12px;
@@ -124,8 +145,12 @@ h1 { font-size: 2rem; margin: 0 0 20px; }
   background: var(--bg);
   color: var(--text);
 }
+.edit-row input[type="date"] { flex: 0 1 180px; min-height: 48px; }
 .edit-row input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.task-list li.done span {
+.task-text { display: flex; flex-direction: column; min-width: 0; }
+.task-due { font-size: 0.85rem; color: var(--muted); }
+.task-due.overdue { color: var(--danger); font-weight: 600; }
+.task-list li.done .task-title {
   color: var(--muted);
   text-decoration: line-through;
 }
