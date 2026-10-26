@@ -1,4 +1,4 @@
-# Claude.md
+# CLAUDE.md
 
 Guidance for Claude when working in this repository.
 
