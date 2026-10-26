@@ -32,6 +32,7 @@ Keep data logic separate from rendering so a backend can replace storage later.
 
 ## Conventions
 - Keep it simple. Add only what a feature needs.
+- When creating a new function, always add a one-line comment above it describing what it does.
 - Use `textContent`, never `innerHTML`, for task text.
 - Wrap every localStorage access in try/catch.
 - Keep touch targets at least 48px tall and the layout usable from phone to tablet width.
