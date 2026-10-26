@@ -29,7 +29,12 @@ function newId() {
 function addTask(tasks, title) {
   const clean = title.trim();
   if (!clean) return tasks;
-  return [{ id: newId(), title: clean, createdAt: Date.now() }, ...tasks];
+  return [{ id: newId(), title: clean, createdAt: Date.now(), done: false }, ...tasks];
+}
+
+// Return a new list with the given task's done state flipped.
+function toggleTask(tasks, id) {
+  return tasks.map((task) => (task.id === id ? { ...task, done: !task.done } : task));
 }
 
 // Draw the task list, task count and empty message on the page.
@@ -38,13 +43,24 @@ function render(tasks) {
   list.replaceChildren(
     ...tasks.map((task) => {
       const li = document.createElement("li");
-      li.textContent = task.title;
+      li.classList.toggle("done", Boolean(task.done));
+      const label = document.createElement("label");
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = Boolean(task.done);
+      box.dataset.id = task.id;
+      const title = document.createElement("span");
+      title.textContent = task.title;
+      label.append(box, title);
+      li.append(label);
       return li;
     })
   );
+  const doneCount = tasks.filter((task) => task.done).length;
   document.getElementById("empty").hidden = tasks.length > 0;
-  document.getElementById("count").textContent =
-    tasks.length ? `${tasks.length} task${tasks.length === 1 ? "" : "s"}` : "";
+  document.getElementById("count").textContent = tasks.length
+    ? `${tasks.length} task${tasks.length === 1 ? "" : "s"}${doneCount ? `, ${doneCount} done` : ""}`
+    : "";
 }
 
 let tasks = loadTasks();
@@ -58,4 +74,12 @@ document.getElementById("task-form").addEventListener("submit", (event) => {
   render(tasks);
   input.value = "";
   input.focus();
+});
+
+document.getElementById("task-list").addEventListener("change", (event) => {
+  const id = event.target.dataset.id;
+  if (!id) return;
+  tasks = toggleTask(tasks, id);
+  saveTasks(tasks);
+  render(tasks);
 });
