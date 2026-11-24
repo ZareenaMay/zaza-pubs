@@ -29,22 +29,41 @@ function newId() {
 function addTask(tasks, title) {
   const clean = title.trim();
   if (!clean) return tasks;
-  return [{ id: newId(), title: clean, createdAt: Date.now() }, ...tasks];
+  return [{ id: newId(), title: clean, done: false, createdAt: Date.now() }, ...tasks];
+}
+
+// Return a new list with the given task marked done or not done.
+function setTaskDone(tasks, id, done) {
+  return tasks.map((task) => (task.id === id ? { ...task, done } : task));
+}
+
+// Build one task row: a checkbox and the task title, both tappable.
+function renderTask(task) {
+  const li = document.createElement("li");
+  li.className = task.done ? "task done" : "task";
+
+  const label = document.createElement("label");
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = Boolean(task.done);
+  checkbox.dataset.id = task.id;
+
+  const title = document.createElement("span");
+  title.className = "title";
+  title.textContent = task.title;
+
+  label.append(checkbox, title);
+  li.append(label);
+  return li;
 }
 
 // Draw the task list, task count and empty message on the page.
 function render(tasks) {
-  const list = document.getElementById("task-list");
-  list.replaceChildren(
-    ...tasks.map((task) => {
-      const li = document.createElement("li");
-      li.textContent = task.title;
-      return li;
-    })
-  );
+  document.getElementById("task-list").replaceChildren(...tasks.map(renderTask));
   document.getElementById("empty").hidden = tasks.length > 0;
+  const doneCount = tasks.filter((task) => task.done).length;
   document.getElementById("count").textContent =
-    tasks.length ? `${tasks.length} task${tasks.length === 1 ? "" : "s"}` : "";
+    tasks.length ? `${doneCount} of ${tasks.length} done` : "";
 }
 
 let tasks = loadTasks();
@@ -58,4 +77,12 @@ document.getElementById("task-form").addEventListener("submit", (event) => {
   render(tasks);
   input.value = "";
   input.focus();
+});
+
+document.getElementById("task-list").addEventListener("change", (event) => {
+  const checkbox = event.target;
+  if (checkbox.type !== "checkbox") return;
+  tasks = setTaskDone(tasks, checkbox.dataset.id, checkbox.checked);
+  saveTasks(tasks);
+  render(tasks);
 });

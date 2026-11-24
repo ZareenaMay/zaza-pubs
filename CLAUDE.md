@@ -3,7 +3,7 @@
 Guidance for Claude when working in this repository.
 
 ## Project
-**My Tasks** is a very simple to-do list app for a tablet. The user can add tasks and see them in a list.
+**My Tasks** is a very simple to-do list app for a tablet. The user can add tasks, see them in a list and tick them off as done.
 
 ## Key decisions
 - **Platform:** a single web page that runs in the tablet's browser.
@@ -18,15 +18,17 @@ Guidance for Claude when working in this repository.
 
 ## Data model
 ```js
-{ id: "uuid", title: "Buy milk", createdAt: 1761436800000 }
+{ id: "uuid", title: "Buy milk", done: false, createdAt: 1761436800000 }
 ```
-The list is an array of these, newest first.
+The list is an array of these, newest first. Tasks saved before `done` existed have no `done` field; treat that as not done.
 
 ## Code structure (app.js)
 - `loadTasks()` reads from localStorage (returns `[]` on any error)
 - `saveTasks(tasks)` writes to localStorage (fails silently)
 - `addTask(tasks, title)` trims the title, ignores blanks, returns a new array
-- `render(tasks)` draws the list, task count and empty state
+- `setTaskDone(tasks, id, done)` marks one task done or not done, returns a new array
+- `renderTask(task)` builds one row: checkbox plus title
+- `render(tasks)` draws the list, the "X of Y done" count and empty state
 
 Keep data logic separate from rendering so a backend can replace storage later.
 
@@ -42,7 +44,6 @@ Keep data logic separate from rendering so a backend can replace storage later.
 Open `index.html` in a browser. There are no tests or build commands yet.
 
 ## Roadmap
-1. Mark a task done
-2. Delete or edit a task
-3. Due dates and filters
-4. Sync across devices (needs a backend)
+1. Delete or edit a task
+2. Due dates and filters
+3. Sync across devices (needs a backend)

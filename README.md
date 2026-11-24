@@ -1,6 +1,6 @@
 # My Tasks
 
-A very simple to-do list for a tablet. Add tasks and see them in a list.
+A very simple to-do list for a tablet. Add tasks, see them in a list and tick them off when they're done.
 
 - Works in the tablet's web browser, no install or account.
 - Tasks are saved on the tablet (browser local storage), so they survive a refresh.
@@ -12,4 +12,4 @@ A very simple to-do list for a tablet. Add tasks and see them in a list.
 - `app.js` – load, add, render and save tasks
 
 ## Next ideas
-Mark done, delete/edit, due dates, sync across devices.
+Delete/edit, due dates, sync across devices.
