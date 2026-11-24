@@ -1,6 +1,14 @@
 // Tasks are saved on this device in the browser's local storage.
 const STORAGE_KEY = "tasks";
+const FILTER_KEY = "taskFilter";
 const UNDO_SECONDS = 6;
+const FILTERS = ["all", "todo", "overdue", "done"];
+const EMPTY_MESSAGES = {
+  all: "No tasks yet. Add one above.",
+  todo: "Nothing left to do.",
+  overdue: "Nothing overdue.",
+  done: "No finished tasks yet.",
+};
 
 // Read the saved task list from this device, or an empty list if none.
 function loadTasks() {
@@ -27,10 +35,10 @@ function newId() {
 }
 
 // Return a new list with the trimmed task added at the top (blank titles are ignored).
-function addTask(tasks, title) {
+function addTask(tasks, title, due) {
   const clean = title.trim();
   if (!clean) return tasks;
-  return [{ id: newId(), title: clean, done: false, createdAt: Date.now() }, ...tasks];
+  return [{ id: newId(), title: clean, done: false, due: due || null, createdAt: Date.now() }, ...tasks];
 }
 
 // Return a new list with the given task marked done or not done.
@@ -38,11 +46,72 @@ function setTaskDone(tasks, id, done) {
   return tasks.map((task) => (task.id === id ? { ...task, done } : task));
 }
 
-// Return a new list with the given task's title changed (blank titles are ignored).
-function renameTask(tasks, id, title) {
+// Return a new list with the given task's title and due date changed (a blank title keeps the old one).
+function editTask(tasks, id, title, due) {
   const clean = title.trim();
-  if (!clean) return tasks;
-  return tasks.map((task) => (task.id === id ? { ...task, title: clean } : task));
+  return tasks.map((task) =>
+    task.id === id ? { ...task, title: clean || task.title, due: due || null } : task
+  );
+}
+
+// Load the filter the user picked last time, or "all".
+function loadFilter() {
+  try {
+    const saved = localStorage.getItem(FILTER_KEY);
+    return FILTERS.includes(saved) ? saved : "all";
+  } catch {
+    return "all";
+  }
+}
+
+// Remember the chosen filter on this device.
+function saveFilter(filter) {
+  try {
+    localStorage.setItem(FILTER_KEY, filter);
+  } catch {
+    // Storage unavailable; the filter just won't be remembered.
+  }
+}
+
+// Today's date as "YYYY-MM-DD" in the tablet's own time zone.
+function todayString() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+// Turn a "YYYY-MM-DD" string into a local Date at midnight.
+function parseDate(text) {
+  const [year, month, day] = text.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+// Is this task past its due date and still not done?
+function isOverdue(task, today) {
+  return Boolean(task.due) && !task.done && task.due < today;
+}
+
+// Does this task belong in the chosen filter?
+function matchesFilter(task, filter, today) {
+  if (filter === "todo") return !task.done;
+  if (filter === "done") return Boolean(task.done);
+  if (filter === "overdue") return isOverdue(task, today);
+  return true;
+}
+
+// Describe a due date in friendly words, e.g. "Due today" or "Overdue · Mon 3 Nov".
+function describeDue(task, today) {
+  const due = parseDate(task.due);
+  const days = Math.round((due - parseDate(today)) / 86400000);
+  const sameYear = due.getFullYear() === parseDate(today).getFullYear();
+  const dateText = due.toLocaleDateString(undefined, {
+    weekday: "short", day: "numeric", month: "short", year: sameYear ? undefined : "numeric",
+  });
+  if (task.done) return { text: `Due ${dateText}`, state: "" };
+  if (days < 0) return { text: `Overdue · ${dateText}`, state: "overdue" };
+  if (days === 0) return { text: "Due today", state: "today" };
+  if (days === 1) return { text: "Due tomorrow", state: "" };
+  return { text: `Due ${dateText}`, state: "" };
 }
 
 // Return a new list without the given task.
@@ -68,8 +137,8 @@ function makeButton(text, action, label, extraClass) {
   return button;
 }
 
-// Build one task row in normal mode: checkbox, title, Edit and Delete buttons.
-function renderTask(task) {
+// Build one task row in normal mode: checkbox, title, due date, Edit and Delete buttons.
+function renderTask(task, today) {
   const li = document.createElement("li");
   li.className = task.done ? "task done" : "task";
   li.dataset.id = task.id;
@@ -79,11 +148,22 @@ function renderTask(task) {
   checkbox.type = "checkbox";
   checkbox.checked = Boolean(task.done);
 
+  const text = document.createElement("span");
+  text.className = "text";
   const title = document.createElement("span");
   title.className = "title";
   title.textContent = task.title;
+  text.append(title);
 
-  label.append(checkbox, title);
+  if (task.due) {
+    const { text: dueText, state } = describeDue(task, today);
+    const due = document.createElement("span");
+    due.className = state ? `due ${state}` : "due";
+    due.textContent = dueText;
+    text.append(due);
+  }
+
+  label.append(checkbox, text);
   li.append(
     label,
     makeButton("Edit", "edit", `Edit "${task.title}"`),
@@ -92,7 +172,7 @@ function renderTask(task) {
   return li;
 }
 
-// Build one task row in edit mode: a text box with Save and Cancel.
+// Build one task row in edit mode: name and due date boxes with Save and Cancel.
 function renderEditTask(task) {
   const li = document.createElement("li");
   li.className = "task editing";
@@ -110,19 +190,37 @@ function renderEditTask(task) {
   input.setAttribute("aria-label", "Task name");
   input.setAttribute("enterkeyhint", "done");
 
+  const dueInput = document.createElement("input");
+  dueInput.type = "date";
+  dueInput.id = "edit-due";
+  dueInput.className = "date-input";
+  dueInput.value = task.due || "";
+  dueInput.setAttribute("aria-label", "Due date");
+
   const save = makeButton("Save", "save", null, "primary");
   save.type = "submit";
-  form.append(input, save, makeButton("Cancel", "cancel"));
+  form.append(input, dueInput, save, makeButton("Cancel", "cancel"));
   li.append(form);
   return li;
 }
 
-// Draw the task list, the done count and empty message on the page.
+// Draw the filter buttons, the tasks that match the filter, the done count and empty message.
 function render(tasks) {
+  const today = todayString();
+  const shown = tasks.filter((task) => matchesFilter(task, filter, today));
   document.getElementById("task-list").replaceChildren(
-    ...tasks.map((task) => (task.id === editingId ? renderEditTask(task) : renderTask(task)))
+    ...shown.map((task) => (task.id === editingId ? renderEditTask(task) : renderTask(task, today)))
   );
-  document.getElementById("empty").hidden = tasks.length > 0;
+
+  const overdueCount = tasks.filter((task) => isOverdue(task, today)).length;
+  document.querySelectorAll("#filters button").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.filter === filter));
+  });
+  document.getElementById("overdue-count").textContent = overdueCount ? ` (${overdueCount})` : "";
+
+  const empty = document.getElementById("empty");
+  empty.hidden = shown.length > 0;
+  empty.textContent = tasks.length ? EMPTY_MESSAGES[filter] : EMPTY_MESSAGES.all;
   const doneCount = tasks.filter((task) => task.done).length;
   document.getElementById("count").textContent =
     tasks.length ? `${doneCount} of ${tasks.length} done` : "";
@@ -157,6 +255,7 @@ function update(newTasks) {
 }
 
 let tasks = loadTasks();
+let filter = loadFilter();
 let editingId = null;
 let lastDeleted = null;
 let undoTimer = null;
@@ -165,8 +264,11 @@ render(tasks);
 document.getElementById("task-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const input = document.getElementById("task-input");
-  update(addTask(tasks, input.value));
+  const dueInput = document.getElementById("task-due");
+  if (!input.value.trim()) return input.focus();
+  update(addTask(tasks, input.value, dueInput.value));
   input.value = "";
+  dueInput.value = "";
   input.focus();
 });
 
@@ -201,9 +303,10 @@ list.addEventListener("click", (event) => {
 list.addEventListener("submit", (event) => {
   event.preventDefault();
   const id = event.target.closest("li").dataset.id;
-  const title = event.target.querySelector("input").value;
+  const title = document.getElementById("edit-input").value;
+  const due = document.getElementById("edit-due").value;
   editingId = null;
-  update(renameTask(tasks, id, title));
+  update(editTask(tasks, id, title, due));
 });
 
 list.addEventListener("keydown", (event) => {
@@ -216,4 +319,13 @@ list.addEventListener("keydown", (event) => {
 document.getElementById("undo-btn").addEventListener("click", () => {
   if (lastDeleted) update(restoreTask(tasks, lastDeleted.task, lastDeleted.index));
   hideUndo();
+});
+
+document.getElementById("filters").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-filter]");
+  if (!button) return;
+  filter = button.dataset.filter;
+  editingId = null;
+  saveFilter(filter);
+  render(tasks);
 });

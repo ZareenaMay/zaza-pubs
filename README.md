@@ -1,6 +1,6 @@
 # My Tasks
 
-A very simple to-do list for a tablet. Add tasks, tick them off when they're done, and edit or delete them. A deleted task can be brought back with Undo for a few seconds.
+A very simple to-do list for a tablet. Add tasks with an optional due date, tick them off when they're done, filter by All, To do, Overdue or Done, and edit or delete them. A deleted task can be brought back with Undo for a few seconds.
 
 - Works in the tablet's web browser, no install or account.
 - Tasks are saved on the tablet (browser local storage), so they survive a refresh.
@@ -12,4 +12,4 @@ A very simple to-do list for a tablet. Add tasks, tick them off when they're don
 - `app.js` – load, add, render and save tasks
 
 ## Next ideas
-Due dates, sync across devices.
+Sort by due date, sync across devices.
