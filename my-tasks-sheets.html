@@ -1,0 +1,926 @@
+<title>My Tasks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: one centered column sized for a tablet held either way; big touch targets. */
+  :root {
+    --bg: #eef1ec;
+    --card: #ffffff;
+    --fg: #1d241f;
+    --muted: #5f6b63;
+    --line: #d5dcd4;
+    --accent: #2f6f4f;
+    --on-accent: #ffffff;
+    --danger: #b3392f;
+    --notice-bg: #fff4dc;
+    --notice-line: #e7cf96;
+    --toast-bg: #1d241f;
+    --toast-fg: #ffffff;
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151a17; --card: #1f2621; --fg: #e8ede9; --muted: #9aa69e;
+      --line: #334038; --accent: #6cbf93; --on-accent: #0e1a13; --danger: #ef8a7f;
+      --notice-bg: #2c2717; --notice-line: #5c4f2a;
+      --toast-bg: #e8ede9; --toast-fg: #151a17; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151a17; --card: #1f2621; --fg: #e8ede9; --muted: #9aa69e;
+    --line: #334038; --accent: #6cbf93; --on-accent: #0e1a13; --danger: #ef8a7f;
+    --notice-bg: #2c2717; --notice-line: #5c4f2a;
+    --toast-bg: #e8ede9; --toast-fg: #151a17; color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 18px/1.5 var(--font-body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .app {
+    max-width: 680px;
+    margin: 0 auto;
+    padding-block: 40px 96px;
+    display: grid;
+    gap: 20px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 2.4rem;
+    line-height: 1.1;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .add-row { display: flex; flex-wrap: wrap; gap: 12px; }
+  .add-row input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    padding: 14px 18px;
+    min-height: 56px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--card);
+    color: var(--fg);
+  }
+  .add-row #task-input { flex: 1 1 240px; }
+  .add-row .date-input { flex: 0 1 auto; }
+  .add-row input:focus-visible,
+  .add-row button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .add-row button {
+    font: inherit;
+    font-weight: 700;
+    padding: 0 30px;
+    min-height: 56px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--accent);
+    color: var(--on-accent);
+    cursor: pointer;
+  }
+  .add-row button:active { transform: scale(0.97); }
+  .add-row input:disabled, .add-row button:disabled { opacity: 0.55; cursor: default; }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+  }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; }
+  .filters button {
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    min-height: 48px;
+    padding: 0 18px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .filters button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .filters button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .count {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-variant-numeric: tabular-nums;
+  }
+  .notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    padding: 12px 12px 12px 18px;
+    border: 1px solid var(--notice-line);
+    border-radius: 14px;
+    background: var(--notice-bg);
+  }
+  .notice p { flex: 1 1 260px; margin: 0; }
+  .notice button {
+    flex: none;
+    font: inherit;
+    font-weight: 700;
+    min-height: 48px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--on-accent);
+    cursor: pointer;
+  }
+  .notice button:disabled { opacity: 0.55; cursor: default; }
+  .notice button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .task-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .task-list li {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .task { display: flex; align-items: center; gap: 4px; padding-right: 8px; }
+  .task label {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 58px;
+    padding: 12px 18px;
+    cursor: pointer;
+  }
+  .task input[type="checkbox"] {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .task input[type="checkbox"]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .task .text { min-width: 0; display: flex; flex-direction: column; }
+  .task .title { overflow-wrap: anywhere; }
+  .task .due { font-size: 0.85rem; color: var(--muted); }
+  .task .due.today { color: var(--accent); font-weight: 700; }
+  .task .due.overdue { color: var(--danger); font-weight: 700; }
+  .task.done .title { color: var(--muted); text-decoration: line-through; }
+  .row-btn {
+    flex: none;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .row-btn.danger { color: var(--danger); }
+  .row-btn.primary { background: var(--accent); color: var(--on-accent); }
+  .row-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .edit-form { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0 8px 8px; }
+  .edit-form input {
+    flex: 1 1 200px;
+    min-width: 0;
+    font: inherit;
+    min-height: 48px;
+    padding: 8px 12px;
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--fg);
+  }
+  .edit-form .date-input { flex: 0 1 auto; }
+  .edit-form input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .undo-bar {
+    position: fixed;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    width: min(560px, calc(100% - 32px));
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 8px 8px 18px;
+    border-radius: 14px;
+    background: var(--toast-bg);
+    color: var(--toast-fg);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  }
+  .undo-bar span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .undo-bar button {
+    font: inherit;
+    font-weight: 700;
+    min-height: 48px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--toast-fg);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 40px 16px;
+    border: 2px dashed var(--line);
+    border-radius: 14px;
+    margin: 0;
+  }
+  .footer { margin: 0; color: var(--muted); font-size: 0.9rem; display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: space-between; }
+  .footer a { color: var(--accent); font-weight: 700; }
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  @media (prefers-reduced-motion: reduce) { .add-row button:active { transform: none; } }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Nunito+Sans:wght@400;700&display=swap">
+
+<main class="app">
+  <h1>My Tasks</h1>
+  <form id="task-form" class="add-row" autocomplete="off">
+    <label for="task-input" class="visually-hidden">New task</label>
+    <input id="task-input" type="text" placeholder="New task…" maxlength="200" enterkeyhint="done" disabled>
+    <label for="task-due" class="visually-hidden">Due date (optional)</label>
+    <input id="task-due" class="date-input" type="date" title="Due date (optional)" disabled>
+    <button id="add-btn" type="submit" disabled>Add</button>
+  </form>
+  <div id="notice" class="notice" role="alert" hidden>
+    <p id="notice-text"></p>
+    <button id="notice-btn" type="button" hidden>Try again</button>
+  </div>
+  <div id="move-bar" class="notice" hidden>
+    <p id="move-text"></p>
+    <button id="move-btn" type="button">Move to Google Sheets</button>
+  </div>
+  <div class="toolbar">
+    <div id="filters" class="filters" role="group" aria-label="Show tasks">
+      <button type="button" data-filter="all">All</button>
+      <button type="button" data-filter="todo">To do</button>
+      <button type="button" data-filter="overdue">Overdue<span id="overdue-count"></span></button>
+      <button type="button" data-filter="done">Done</button>
+    </div>
+    <p id="count" class="count"></p>
+  </div>
+  <ul id="task-list" class="task-list"></ul>
+  <p id="empty" class="empty">Loading your tasks from Google Sheets…</p>
+  <p class="footer">
+    <span>Saved in <a id="sheet-link" href="https://docs.google.com/spreadsheets/d/1xZXnQgFfgM8O_SN_6fICxmeoRtJuNPHFN2cPmuDLPx0/edit" target="_blank" rel="noopener">My Tasks</a> in your Google Drive</span>
+    <span id="sync-status" role="status"></span>
+  </p>
+</main>
+<div id="undo-bar" class="undo-bar" role="status" hidden>
+  <span id="undo-text"></span>
+  <button id="undo-btn" type="button">Undo</button>
+</div>
+
+<script>
+  // Tasks are kept in the "My Tasks" Google Sheet (Claude folder in Google Drive):
+  // one row per task, columns Task | Due date | Done | ID, newest task in row 2.
+  const SHEET_ID = "1xZXnQgFfgM8O_SN_6fICxmeoRtJuNPHFN2cPmuDLPx0";
+  const SERVER = "Google Sheets";
+  const TAB = "Tasks";
+  const TAB_ID = 0;
+  const FILTER_KEY = "taskFilter";
+  const DEVICE_TASKS_KEY = "tasks";
+  const MOVED_KEY = "tasksMovedToSheet";
+  const UNDO_SECONDS = 6;
+  const FILTERS = ["all", "todo", "overdue", "done"];
+  const EMPTY_MESSAGES = {
+    all: "No tasks yet. Add one above.",
+    todo: "Nothing left to do.",
+    overdue: "Nothing overdue.",
+    done: "No finished tasks yet.",
+  };
+  const PERMISSION_TEXT = "This page needs your permission to use Google Sheets. Tap Try again and choose Allow.";
+  const ERROR_TEXT = {
+    server_not_connected: "Google Sheets isn't connected. Add it in claude.ai Settings → Connectors, then tap Try again.",
+    needs_reauth: "Your Google connection has expired. Reconnect Google Sheets in claude.ai Settings → Connectors, then tap Try again.",
+    selection_required: "You have more than one Google Sheets connection. Pick one when claude.ai asks, then tap Try again.",
+    not_in_manifest: PERMISSION_TEXT,
+    approval_required: PERMISSION_TEXT,
+    consent_required: PERMISSION_TEXT,
+    blocked_by_policy: "Your organisation doesn't allow this page to use Google Sheets.",
+    not_found: "That task was changed or removed in the sheet, so the list has been refreshed.",
+    tool_error: "Google Sheets couldn't save that change. The list now shows what's in the sheet.",
+  };
+  const NO_RETRY = ["blocked_by_policy", "not_found"];
+
+  let mcp = null;
+  let tasks = [];
+  let filter = loadFilter();
+  let editingId = null;
+  let focusEdit = false;
+  let lastDeleted = null;
+  let undoTimer = null;
+  let loaded = false;
+  let queue = Promise.resolve();
+
+  // ---------- Talking to the Google Sheet ----------
+
+  // Call one Google Sheets tool and return its answer as plain data.
+  async function sheets(tool, input) {
+    const result = await mcp.callTool(SERVER, tool, input, { cache: false });
+    const payload = result && result.payload;
+    if (payload && typeof payload === "object" && !("values" in payload) && payload.content && typeof payload.content === "object") {
+      return payload.content;
+    }
+    return payload;
+  }
+
+  // Turn one sheet row into a task, or null for a blank row. `row` is the 0-based sheet row.
+  function rowToTask(values, row) {
+    const [title = "", due = "", done = "", id = ""] = values.map((v) => String(v ?? "").trim());
+    if (!title && !id) return null;
+    return {
+      id,
+      title: title || "(no name)",
+      due: /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : null,
+      done: done.toUpperCase() === "TRUE",
+      row,
+    };
+  }
+
+  // Read every task from the sheet, top row first.
+  async function readSheet() {
+    const data = await sheets("get_values", { spreadsheetId: SHEET_ID, range: `${TAB}!A2:D` });
+    const rows = (data && Array.isArray(data.values)) ? data.values : [];
+    return rows.map((values, i) => rowToTask(values, i + 1)).filter(Boolean);
+  }
+
+  // The sheet range for one row, from one column up to (not including) another.
+  function cellRange(row, fromCol, toCol) {
+    return { sheetId: TAB_ID, startRowIndex: row, endRowIndex: row + 1, startColumnIndex: fromCol, endColumnIndex: toCol };
+  }
+
+  // Turn "YYYY-MM-DD" into the day number Google Sheets uses for dates.
+  function toSheetDate(text) {
+    const [year, month, day] = text.split("-").map(Number);
+    return (Date.UTC(year, month - 1, day) - Date.UTC(1899, 11, 30)) / 86400000;
+  }
+
+  // The sheet cell for a task's name, stored exactly as typed.
+  function titleCell(title) {
+    return { userEnteredValue: { stringValue: title } };
+  }
+
+  // The sheet cell for a due date (empty when there isn't one), shown as YYYY-MM-DD.
+  function dueCell(due) {
+    const cell = { userEnteredFormat: { numberFormat: { type: "DATE", pattern: "yyyy-mm-dd" } } };
+    if (due) cell.userEnteredValue = { numberValue: toSheetDate(due) };
+    return cell;
+  }
+
+  // The sheet cell for "done", shown as a tickbox.
+  function doneCell(done) {
+    return { userEnteredValue: { boolValue: Boolean(done) }, dataValidation: { condition: { type: "BOOLEAN" }, strict: true } };
+  }
+
+  // The sheet cell for a task's ID, kept as plain text.
+  function idCell(id) {
+    return { userEnteredValue: { stringValue: id }, userEnteredFormat: { numberFormat: { type: "TEXT" } } };
+  }
+
+  // Sheet requests that insert a task as a new row at the given position.
+  function insertRequests(task, row) {
+    return [
+      { insertDimension: { range: { sheetId: TAB_ID, dimension: "ROWS", startIndex: row, endIndex: row + 1 }, inheritFromBefore: false } },
+      { updateCells: {
+        range: cellRange(row, 0, 4),
+        rows: [{ values: [titleCell(task.title), dueCell(task.due), doneCell(task.done), idCell(task.id)] }],
+        fields: "userEnteredValue,userEnteredFormat,dataValidation",
+      } },
+    ];
+  }
+
+  // Send a list of changes to the sheet in one go.
+  function changeSheet(requests) {
+    return sheets("update_spreadsheet", { spreadsheetId: SHEET_ID, requests });
+  }
+
+  // Find a task's current row in the sheet (rows can move if the sheet was edited elsewhere).
+  async function findRow(id) {
+    const match = (await readSheet()).find((task) => task.id === id);
+    if (!match) throw { code: "not_found" };
+    return match.row;
+  }
+
+  // Give an ID to any task typed straight into the sheet, so the app can find it again.
+  async function fillMissingIds(list) {
+    const missing = list.filter((task) => !task.id);
+    if (!missing.length) return list;
+    missing.forEach((task) => { task.id = newId(); });
+    await changeSheet(missing.map((task) => ({
+      updateCells: { range: cellRange(task.row, 3, 4), rows: [{ values: [idCell(task.id)] }], fields: "userEnteredValue,userEnteredFormat.numberFormat" },
+    })));
+    return list;
+  }
+
+  // Fetch the latest tasks from the sheet and redraw.
+  async function reload() {
+    tasks = await fillMissingIds(await readSheet());
+    loaded = true;
+    setFormEnabled(true);
+    render(tasks);
+  }
+
+  // Run one change against the sheet after any earlier ones finish, then reload the list from the sheet.
+  function sync(change) {
+    setStatus("Saving…");
+    queue = queue.then(async () => {
+      try {
+        await change();
+        await reload();
+        setStatus("Saved");
+      } catch (error) {
+        setStatus("");
+        showError(error);
+        try { await reload(); } catch { /* keep what's on screen */ }
+      }
+    });
+    return queue;
+  }
+
+  // Connect to Google Sheets and show the tasks, or explain what's needed.
+  async function start() {
+    hideNotice();
+    if (!mcp) {
+      const claude = window.claude;
+      mcp = claude && typeof claude.use === "function" ? await claude.use("mcp") : null;
+    }
+    if (!mcp) {
+      setEmptyText("Your tasks are kept in Google Sheets. Open this page from its claude.ai link while signed in to see them.");
+      return;
+    }
+    try {
+      await reload();
+    } catch (error) {
+      if (error && error.retryable) {
+        await new Promise((done) => setTimeout(done, Math.min(error.retryAfterMs || 1500, 10000) + Math.random() * 500));
+        try { await reload(); } catch (again) { return failLoad(again); }
+      } else {
+        return failLoad(error);
+      }
+    }
+    offerMove();
+  }
+
+  // Show why the tasks couldn't be loaded.
+  function failLoad(error) {
+    setEmptyText("Your tasks couldn't be loaded yet.");
+    showError(error);
+  }
+
+  // ---------- Tasks saved only on this device by the earlier version ----------
+
+  // Read tasks the earlier version saved on this device.
+  function loadDeviceTasks() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(DEVICE_TASKS_KEY));
+      return Array.isArray(saved) ? saved.filter((task) => task && String(task.title || "").trim()) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  // Has this device's list already been moved to the sheet?
+  function deviceTasksMoved() {
+    try { return localStorage.getItem(MOVED_KEY) === "yes"; } catch { return false; }
+  }
+
+  // Remember that this device's list has been moved, so the offer doesn't come back.
+  function markDeviceTasksMoved() {
+    try { localStorage.setItem(MOVED_KEY, "yes"); } catch { /* offer may show again */ }
+  }
+
+  // Device tasks that aren't in the sheet yet.
+  function tasksToMove() {
+    const inSheet = new Set(tasks.map((task) => task.id));
+    return loadDeviceTasks().filter((task) => !inSheet.has(task.id));
+  }
+
+  // Offer to copy tasks saved only on this device into the sheet.
+  function offerMove() {
+    const pending = deviceTasksMoved() ? [] : tasksToMove();
+    const bar = document.getElementById("move-bar");
+    bar.hidden = pending.length === 0;
+    if (!pending.length) return;
+    const n = pending.length;
+    document.getElementById("move-text").textContent =
+      `${n} task${n === 1 ? " is" : "s are"} saved only on this device from before. Move ${n === 1 ? "it" : "them"} to your Google Sheet so ${n === 1 ? "it's" : "they're"} kept with the rest.`;
+  }
+
+  // Copy this device's tasks into the sheet, keeping their order, ticks and due dates.
+  function moveDeviceTasks() {
+    const pending = tasksToMove();
+    const button = document.getElementById("move-btn");
+    button.disabled = true;
+    sync(async () => {
+      if (pending.length) {
+        const requests = [];
+        [...pending].reverse().forEach((task) => {
+          requests.push(...insertRequests({
+            id: String(task.id || newId()),
+            title: String(task.title).trim(),
+            due: /^\d{4}-\d{2}-\d{2}$/.test(task.due || "") ? task.due : null,
+            done: Boolean(task.done),
+          }, 1));
+        });
+        await changeSheet(requests);
+      }
+      markDeviceTasksMoved();
+    }).then(() => {
+      button.disabled = false;
+      offerMove();
+    });
+  }
+
+  // ---------- Task logic ----------
+
+  // Make a unique id for a new task.
+  function newId() {
+    return crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random();
+  }
+
+  // Load the filter the user picked last time, or "all".
+  function loadFilter() {
+    try {
+      const saved = localStorage.getItem(FILTER_KEY);
+      return FILTERS.includes(saved) ? saved : "all";
+    } catch {
+      return "all";
+    }
+  }
+
+  // Remember the chosen filter on this device.
+  function saveFilter(value) {
+    try { localStorage.setItem(FILTER_KEY, value); } catch { /* not remembered */ }
+  }
+
+  // Today's date as "YYYY-MM-DD" in the device's own time zone.
+  function todayString() {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  }
+
+  // Turn a "YYYY-MM-DD" string into a local Date at midnight.
+  function parseDate(text) {
+    const [year, month, day] = text.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  // Is this task past its due date and still not done?
+  function isOverdue(task, today) {
+    return Boolean(task.due) && !task.done && task.due < today;
+  }
+
+  // Does this task belong in the chosen filter?
+  function matchesFilter(task, value, today) {
+    if (value === "todo") return !task.done;
+    if (value === "done") return Boolean(task.done);
+    if (value === "overdue") return isOverdue(task, today);
+    return true;
+  }
+
+  // Describe a due date in friendly words, e.g. "Due today" or "Overdue · Mon 3 Nov".
+  function describeDue(task, today) {
+    const due = parseDate(task.due);
+    const days = Math.round((due - parseDate(today)) / 86400000);
+    const sameYear = due.getFullYear() === parseDate(today).getFullYear();
+    const dateText = due.toLocaleDateString(undefined, {
+      weekday: "short", day: "numeric", month: "short", year: sameYear ? undefined : "numeric",
+    });
+    if (task.done) return { text: `Due ${dateText}`, state: "" };
+    if (days < 0) return { text: `Overdue · ${dateText}`, state: "overdue" };
+    if (days === 0) return { text: "Due today", state: "today" };
+    if (days === 1) return { text: "Due tomorrow", state: "" };
+    return { text: `Due ${dateText}`, state: "" };
+  }
+
+  // Add a task at the top of the list and the sheet.
+  function addTask(title, due) {
+    const task = { id: newId(), title: title.trim(), due: due || null, done: false };
+    tasks = [task, ...tasks];
+    render(tasks);
+    sync(() => changeSheet(insertRequests(task, 1)));
+  }
+
+  // Tick or untick a task.
+  function setTaskDone(id, done) {
+    tasks = tasks.map((task) => (task.id === id ? { ...task, done } : task));
+    render(tasks);
+    sync(async () => {
+      const row = await findRow(id);
+      await changeSheet([{ updateCells: { range: cellRange(row, 2, 3), rows: [{ values: [doneCell(done)] }], fields: "userEnteredValue,dataValidation" } }]);
+    });
+  }
+
+  // Change a task's name and due date (a blank name keeps the old one).
+  function editTask(id, title, due) {
+    const current = tasks.find((task) => task.id === id);
+    if (!current) return;
+    const updated = { ...current, title: title.trim() || current.title, due: due || null };
+    tasks = tasks.map((task) => (task.id === id ? updated : task));
+    render(tasks);
+    sync(async () => {
+      const row = await findRow(id);
+      await changeSheet([{ updateCells: {
+        range: cellRange(row, 0, 2),
+        rows: [{ values: [titleCell(updated.title), dueCell(updated.due)] }],
+        fields: "userEnteredValue,userEnteredFormat.numberFormat",
+      } }]);
+    });
+  }
+
+  // Delete a task, remembering it briefly so Undo can put it back.
+  function deleteTask(id) {
+    const task = tasks.find((item) => item.id === id);
+    if (!task) return;
+    lastDeleted = { task, row: task.row || 1 };
+    tasks = tasks.filter((item) => item.id !== id);
+    render(tasks);
+    showUndo(task.title);
+    sync(async () => {
+      const row = await findRow(id);
+      await changeSheet([{ deleteDimension: { range: { sheetId: TAB_ID, dimension: "ROWS", startIndex: row, endIndex: row + 1 } } }]);
+    });
+  }
+
+  // Put the last deleted task back in the row it came from.
+  function undoDelete() {
+    if (!lastDeleted) return;
+    const { task, row } = lastDeleted;
+    hideUndo();
+    tasks = [...tasks];
+    tasks.splice(Math.max(0, Math.min(row - 1, tasks.length)), 0, task);
+    render(tasks);
+    sync(async () => {
+      const current = await readSheet();
+      if (current.some((item) => item.id === task.id)) return;
+      const lastRow = current.reduce((max, item) => Math.max(max, item.row), 0);
+      await changeSheet(insertRequests(task, Math.min(row, lastRow + 1)));
+    });
+  }
+
+  // ---------- Drawing the page ----------
+
+  // Make a small text button that the list's click handler recognises by its action.
+  function makeButton(text, action, label, extraClass) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = text;
+    button.dataset.action = action;
+    button.className = extraClass ? `row-btn ${extraClass}` : "row-btn";
+    if (label) button.setAttribute("aria-label", label);
+    return button;
+  }
+
+  // Build one task row in normal mode: checkbox, title, due date, Edit and Delete buttons.
+  function renderTask(task, today) {
+    const li = document.createElement("li");
+    li.className = task.done ? "task done" : "task";
+    li.dataset.id = task.id;
+
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = Boolean(task.done);
+
+    const text = document.createElement("span");
+    text.className = "text";
+    const title = document.createElement("span");
+    title.className = "title";
+    title.textContent = task.title;
+    text.append(title);
+
+    if (task.due) {
+      const { text: dueText, state } = describeDue(task, today);
+      const due = document.createElement("span");
+      due.className = state ? `due ${state}` : "due";
+      due.textContent = dueText;
+      text.append(due);
+    }
+
+    label.append(checkbox, text);
+    li.append(
+      label,
+      makeButton("Edit", "edit", `Edit "${task.title}"`),
+      makeButton("Delete", "delete", `Delete "${task.title}"`, "danger")
+    );
+    return li;
+  }
+
+  // Build one task row in edit mode: name and due date boxes with Save and Cancel.
+  function renderEditTask(task, draft) {
+    const li = document.createElement("li");
+    li.className = "task editing";
+    li.dataset.id = task.id;
+
+    const form = document.createElement("form");
+    form.className = "edit-form";
+    form.autocomplete = "off";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = "edit-input";
+    input.value = draft ? draft.title : task.title;
+    input.maxLength = 200;
+    input.setAttribute("aria-label", "Task name");
+    input.setAttribute("enterkeyhint", "done");
+
+    const dueInput = document.createElement("input");
+    dueInput.type = "date";
+    dueInput.id = "edit-due";
+    dueInput.className = "date-input";
+    dueInput.value = draft ? draft.due : (task.due || "");
+    dueInput.setAttribute("aria-label", "Due date");
+
+    const save = makeButton("Save", "save", null, "primary");
+    save.type = "submit";
+    form.append(input, dueInput, save, makeButton("Cancel", "cancel"));
+    li.append(form);
+    return li;
+  }
+
+  // Draw the filter buttons, the tasks that match the filter, the done count and empty message.
+  function render(list) {
+    if (editingId && !list.some((task) => task.id === editingId)) editingId = null;
+    const oldInput = document.getElementById("edit-input");
+    const draft = oldInput && oldInput.closest("li").dataset.id === editingId
+      ? { title: oldInput.value, due: document.getElementById("edit-due").value }
+      : null;
+
+    const today = todayString();
+    const shown = list.filter((task) => matchesFilter(task, filter, today));
+    document.getElementById("task-list").replaceChildren(
+      ...shown.map((task) => (task.id === editingId ? renderEditTask(task, draft) : renderTask(task, today)))
+    );
+
+    const overdueCount = list.filter((task) => isOverdue(task, today)).length;
+    document.querySelectorAll("#filters button").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.filter === filter));
+    });
+    document.getElementById("overdue-count").textContent = overdueCount ? ` (${overdueCount})` : "";
+
+    const empty = document.getElementById("empty");
+    empty.hidden = shown.length > 0;
+    if (loaded) empty.textContent = list.length ? EMPTY_MESSAGES[filter] : EMPTY_MESSAGES.all;
+    const doneCount = list.filter((task) => task.done).length;
+    document.getElementById("count").textContent = list.length ? `${doneCount} of ${list.length} done` : "";
+
+    const editInput = document.getElementById("edit-input");
+    if (editInput && focusEdit) {
+      focusEdit = false;
+      editInput.focus();
+      editInput.setSelectionRange(editInput.value.length, editInput.value.length);
+    } else if (editInput && draft && oldInput === document.activeElement) {
+      editInput.focus();
+    }
+  }
+
+  // Show a message in the empty-list box (used while loading or when the sheet can't be reached).
+  function setEmptyText(text) {
+    const empty = document.getElementById("empty");
+    empty.textContent = text;
+    empty.hidden = false;
+  }
+
+  // Turn the add form on or off (it's off until the sheet has loaded).
+  function setFormEnabled(on) {
+    ["task-input", "task-due", "add-btn"].forEach((id) => { document.getElementById(id).disabled = !on; });
+  }
+
+  // Show "Saving…" or "Saved" next to the sheet link.
+  function setStatus(text) {
+    document.getElementById("sync-status").textContent = text;
+  }
+
+  // Explain a Google Sheets problem in plain words, with Try again where that can help.
+  function showError(error) {
+    const code = error && error.code;
+    showNotice(ERROR_TEXT[code] || "Couldn't reach Google Sheets. Check your internet connection and tap Try again.", !NO_RETRY.includes(code));
+  }
+
+  // Show the message bar, optionally with a Try again button.
+  function showNotice(text, withRetry) {
+    document.getElementById("notice-text").textContent = text;
+    document.getElementById("notice-btn").hidden = !withRetry;
+    document.getElementById("notice").hidden = false;
+  }
+
+  // Hide the message bar.
+  function hideNotice() {
+    document.getElementById("notice").hidden = true;
+  }
+
+  // Show the "Deleted … Undo" bar, hiding it again after a few seconds.
+  function showUndo(title) {
+    document.getElementById("undo-text").textContent = `Deleted "${title}"`;
+    document.getElementById("undo-bar").hidden = false;
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(hideUndo, UNDO_SECONDS * 1000);
+  }
+
+  // Hide the undo bar and forget the last deleted task.
+  function hideUndo() {
+    clearTimeout(undoTimer);
+    document.getElementById("undo-bar").hidden = true;
+    lastDeleted = null;
+  }
+
+  // ---------- Wiring up the controls ----------
+
+  render(tasks);
+  start();
+
+  document.getElementById("task-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = document.getElementById("task-input");
+    const dueInput = document.getElementById("task-due");
+    if (!loaded || !input.value.trim()) return input.focus();
+    addTask(input.value, dueInput.value);
+    input.value = "";
+    dueInput.value = "";
+    input.focus();
+  });
+
+  const list = document.getElementById("task-list");
+
+  list.addEventListener("change", (event) => {
+    if (event.target.type !== "checkbox") return;
+    setTaskDone(event.target.closest("li").dataset.id, event.target.checked);
+  });
+
+  list.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button || button.type === "submit") return;
+    const id = button.closest("li").dataset.id;
+    const action = button.dataset.action;
+    if (action === "edit") {
+      editingId = id;
+      focusEdit = true;
+      render(tasks);
+    } else if (action === "cancel") {
+      editingId = null;
+      render(tasks);
+    } else if (action === "delete") {
+      deleteTask(id);
+    }
+  });
+
+  list.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const id = event.target.closest("li").dataset.id;
+    const title = document.getElementById("edit-input").value;
+    const due = document.getElementById("edit-due").value;
+    editingId = null;
+    editTask(id, title, due);
+  });
+
+  list.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && editingId) {
+      editingId = null;
+      render(tasks);
+    }
+  });
+
+  document.getElementById("undo-btn").addEventListener("click", undoDelete);
+  document.getElementById("move-btn").addEventListener("click", moveDeviceTasks);
+
+  document.getElementById("notice-btn").addEventListener("click", () => {
+    hideNotice();
+    if (!loaded) {
+      setEmptyText("Loading your tasks from Google Sheets…");
+      start();
+    } else {
+      queue = queue.then(() => reload().then(offerMove).catch(showError));
+    }
+  });
+
+  document.getElementById("filters").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-filter]");
+    if (!button) return;
+    filter = button.dataset.filter;
+    editingId = null;
+    saveFilter(filter);
+    render(tasks);
+  });
+
+  // Pick up changes made in the sheet (or by Claude) when you come back to the page.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible" || !loaded || editingId) return;
+    queue = queue.then(() => reload().catch(() => { /* keep what's on screen */ }));
+  });
+</script>

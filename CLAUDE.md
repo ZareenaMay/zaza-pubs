@@ -5,12 +5,28 @@ Guidance for Claude when working in this repository.
 ## Project
 **My Tasks** is a very simple to-do list app for a tablet. The user can add tasks, see them in a list, tick them off as done, give them due dates, filter them (All, To do, Overdue, Done), edit them and delete them (with Undo).
 
+## Two versions
+- `index.html` + `style.css` + `app.js`: the original app. Saves tasks on the device in `localStorage`. Open the file in any browser.
+- `my-tasks-sheets.html`: the version the user actually uses, published as a claude.ai artifact (https://claude.ai/artifact/3pf3wCRRsAeKCJyq87sChv). It saves tasks in the user's **My Tasks** Google Sheet (Claude folder in Google Drive, id `1xZXnQgFfgM8O_SN_6fICxmeoRtJuNPHFN2cPmuDLPx0`) through the claude.ai Google Sheets connector (`mcp` capability, tools `get_values` and `update_spreadsheet`). It only works when opened from the claude.ai link. Publish changes with the Artifact tool to that same URL.
+
+Both share the same task logic, rendering and look; keep features in step unless the user says otherwise.
+
+### The Google Sheet
+- Tab `Tasks`, sheetId `0`. Row 1 is the header: Task | Due date | Done | ID. Newest task in row 2.
+- Due date is a real date formatted `yyyy-mm-dd`; Done is a tickbox (TRUE/FALSE); ID is plain text.
+- Add a task by inserting a row at index 1 and filling it with `updateCells` in the same `update_spreadsheet` call (don't use `append_values`: the tickbox column makes Sheets append at the bottom of the grid).
+- Before changing or deleting a row, re-read the sheet and find the row by ID; rows can move when the sheet is edited directly.
+- Write names with `stringValue` in `updateCells`, never through `update_values`, which would turn text like `1/2` or `=x` into dates or formulas.
+- A row typed straight into the sheet with no ID gets one the next time the app loads.
+- When the user asks Claude to change a task (e.g. "mark X done"), edit the sheet directly with the Google Sheets tools; the app picks it up next time it opens.
+
 ## Key decisions
 - **Platform:** a single web page that runs in the tablet's browser.
-- **Storage:** tasks are saved on the tablet in browser `localStorage` under the key `tasks`; the chosen filter is remembered under `taskFilter`. There is no server, database or account.
+- **Storage:** the original app saves tasks in browser `localStorage` under the key `tasks`; the Sheets version saves them in the Google Sheet and offers once to move any `tasks` left on the device into it (then sets `tasksMovedToSheet`). Both remember the chosen filter under `taskFilter`.
 - **No build step:** plain HTML, CSS and JavaScript, with no frameworks or dependencies.
 
 ## Files
+- `my-tasks-sheets.html`: the Google Sheets version, all in one file (see above)
 - `index.html`: page structure (title, add form with due date, filter buttons, task list, empty state, undo bar)
 - `style.css`: tablet-friendly layout with large touch targets, light and dark mode
 - `app.js`: app logic
@@ -55,4 +71,4 @@ Open `index.html` in a browser. There are no tests or build commands yet.
 
 ## Roadmap
 1. Sort by due date
-2. Sync across devices (needs a backend)
+2. Bring the original app in line with the Sheets version, or retire it
